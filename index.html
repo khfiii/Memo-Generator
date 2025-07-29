@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+   <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <title>Memo Pengambilan Barang</title>
+  <style>
+    /* Gaya untuk tombol ukuran font */
+    .font-size-btn {
+      @apply px-2 py-1 text-xs rounded border;
+    }
+    .font-size-btn.active {
+      @apply bg-blue-500 text-white border-blue-500;
+    }
+    /* Gaya untuk kontainer editor */
+    .editor-container {
+      @apply border border-gray-300 rounded p-1 min-h-[40px] bg-white focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500;
+    }
+     /* Gaya untuk item di pratinjau */
+    .preview-item-row {
+       /* Gaya default untuk seluruh baris item */
+       font-size: 0.8rem; /* Default font size lebih kecil untuk A5 */
+    }
+    .preview-item-row.text-xs { font-size: 0.65rem; }
+    .preview-item-row.text-sm { font-size: 0.75rem; }
+    .preview-item-row.text-base { font-size: 0.8rem; }
+    .preview-item-row.text-lg { font-size: 0.9rem; }
+
+    /* --- CSS untuk layout tabel di pratinjau - DIUBAH --- */
+    /* Hapus atau komentari aturan table-layout: fixed */
+    #memoPreview table {
+        /* table-layout: fixed; */ /* DIHAPUS */
+        width: 100%; /* Tetap gunakan lebar 100% untuk tabel */
+    }
+    #memoPreview table td {
+        padding: 2px 4px; /* Kurangi padding */
+        vertical-align: top; /* Sejajarkan teks ke atas */
+        /* overflow: hidden; Hapus jika tidak ingin menyembunyikan teks */
+        /* text-overflow: ellipsis; Hapus jika tidak ingin elipsis */
+        white-space: nowrap; /* Cegah wrapping - TETAP DIPERTAHANKAN */
+        word-wrap: normal; /* Nonaktifkan word wrap - TETAP DIPERTAHANKAN */
+        /* width: ... Hapus properti width inline dari HTML untuk fleksibilitas penuh */
+    }
+    /* ----------------------------------------------------------------- */
+
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-8">
+  <div class="max-w-7xl mx-auto bg-white rounded-lg shadow-lg p-4 md:p-8">
+    <div class="text-center mb-6 md:mb-8">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Generate Memo Pengambilan Barang</h1>
+      <p class="text-gray-600 mt-1 md:mt-2 text-sm md:text-base">Masukkan data untuk membuat memo secara dinamis</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <!-- Input Form Section -->
+      <div class="bg-gray-50 p-4 md:p-6 rounded-lg border border-gray-200">
+        <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-3 md:mb-4">Input Data</h2>
+        <form id="memoForm" class="space-y-4 md:space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div>
+              <label for="dateInput" class="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Tanggal</label>
+              <input type="date" id="dateInput" name="dateInput"
+                     class="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     onchange="updatePreview(); formatDate();">
+              <input type="hidden" id="formattedDate" name="formattedDate">
+            </div>
+            <div>
+              <label for="to" class="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Kepada</label>
+              <input type="text" id="to" name="to"
+                     class="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="Mas Fattah" oninput="updatePreview()">
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-5">
+          
+               <div>
+            <label for="km" class="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">KM</label>
+            <input type="text" id="km" name="km"
+                   class="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="KM 22" oninput="updatePreview()">
+          </div>
+          
+          <div>
+               <div>
+              <label for="signature" class="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-2">Untuk</label>
+              <input type="text" id="signature" name="signature"
+                     class="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="IHSAN" oninput="updatePreview()">
+            </div>
+            
+          </div>
+          
+          </div>
+       
+          
+          <!-- DIATAS (KAPUAS) Section -->
+          <div class="border border-gray-300 rounded-lg p-3 md:p-4 bg-white">
+            <div class="mb-2 md:mb-3">
+              <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Header DIATAS</label>
+              <input type="text" id="diatasHeader" name="diatasHeader"
+                     class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="Contoh: DIATAS (KAPUAS)" value="" oninput="updatePreview()">
+            </div>
+            <div id="diatasItems" class="space-y-3 md:space-y-4">
+              <div class="diatas-item border border-gray-200 rounded p-2 md:p-3 bg-gray-50">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-medium text-gray-700">Nama Barang</label>
+                  <div class="flex space-x-1">
+                    <button type="button" class="font-size-btn active" data-size="text-base" onclick="setFont(this, 'diatas')">XS</button>
+                    <button type="button" class="font-size-btn" data-size="text-lg" onclick="setFont(this, 'diatas')">S</button>
+                    <button type="button" class="font-size-btn" data-size="text-xl" onclick="setFont(this, 'diatas')">M</button>
+                    <button type="button" class="font-size-btn" data-size="text-2xl" onclick="setFont(this, 'diatas')">L</button>
+                  </div>
+                </div>
+                <div class="editor-container diatas-editor-container" id="diatas-editor-0" data-font-size="text-base"></div>
+                <div class="grid grid-cols-12 gap-2 items-end mt-2">
+                  <div class="col-span-8 md:col-span-9">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                    <input type="number" name="diatas_quantity[]"
+                           class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 diatas-qty"
+                           placeholder="160" min="1" oninput="updatePreview()">
+                  </div>
+                  <div class="col-span-4 md:col-span-3 flex justify-end items-end pb-1.5">
+                    <button type="button" onclick="removeDiatasItem(this)"
+                            class="bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded transition duration-300 text-xs">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="addDiatasItem()"
+                    class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded transition duration-300 flex items-center text-xs md:text-sm">
+              <i class="fa-solid fa-plus mr-1"></i> Tambah Item
+            </button>
+          </div>
+          <!-- DIBAWAH (PULPIS) Section -->
+          <div class="border border-gray-300 rounded-lg p-3 md:p-4 bg-white">
+            <div class="mb-2 md:mb-3">
+              <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Header DIBAWAH</label>
+              <input type="text" id="dibawahHeader" name="dibawahHeader"
+                     class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="Contoh: DIBAWAH (PULPIS)" value="" oninput="updatePreview()">
+            </div>
+            <div id="dibawahItems" class="space-y-3 md:space-y-4">
+               <div class="dibawah-item border border-gray-200 rounded p-2 md:p-3 bg-gray-50">
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-medium text-gray-700">Nama Barang</label>
+                  <div class="flex space-x-1">
+                    <button type="button" class="font-size-btn active" data-size="text-base" onclick="setFont(this, 'dibawah')">XS</button>
+                    <button type="button" class="font-size-btn" data-size="text-lg" onclick="setFont(this, 'dibawah')">S</button>
+                    <button type="button" class="font-size-btn" data-size="text-xl" onclick="setFont(this, 'dibawah')">M</button>
+                    <button type="button" class="font-size-btn" data-size="text-2xl" onclick="setFont(this, 'dibawah')">L</button>
+                  </div>
+                </div>
+                <div class="editor-container dibawah-editor-container" id="dibawah-editor-0" data-font-size="text-base"></div>
+                <div class="grid grid-cols-12 gap-2 items-end mt-2">
+                  <div class="col-span-8 md:col-span-9">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                    <input type="number" name="dibawah_quantity[]"
+                           class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dibawah-qty"
+                           placeholder="160" min="1" oninput="updatePreview()">
+                  </div>
+                  <div class="col-span-4 md:col-span-3 flex justify-end items-end pb-1.5">
+                    <button type="button" onclick="removeDibawahItem(this)"
+                            class="bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded transition duration-300 text-xs">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" onclick="addDibawahItem()"
+                    class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded transition duration-300 flex items-center text-xs md:text-sm">
+              <i class="fa-solid fa-plus mr-1"></i> Tambah Item
+            </button>
+          </div>
+          <div class="flex justify-center pt-4 space-x-4">
+            <button type="button" onclick="printMemoDirect('A5', 'portrait')"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center text-xs md:text-sm">
+              <i class="fa-solid fa-print mr-1"></i> Print A5 Potrait
+            </button>
+            <button type="button" onclick="printMemoDirect('A5', 'landscape')"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out flex items-center text-xs md:text-sm">
+              <i class="fa-solid fa-print mr-1"></i> Print A5 Landscape
+            </button>
+          </div>
+        </form>
+      </div>
+      <!-- Preview Section -->
+      <div class="bg-white p-4 md:p-6 rounded-lg border border-gray-200 flex flex-col">
+        <h2 class="text-lg md:text-xl font-semibold text-gray-700 mb-3 md:mb-4 text-center">Preview Memo</h2>
+        <div id="memoPreview" class="flex-grow overflow-auto p-4 bg-gray-50 rounded border border-gray-300 text-xs">
+          <!-- Preview content will be generated here -->
+        </div>
+         <div class="mt-4 text-center text-xs text-gray-500">
+            * Perubahan pada input akan langsung terlihat di sini.
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Editor.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@editorjs/paragraph@latest"></script>
+  <script>
+    // --- Editor.js Instances ---
+    let diatasEditors = [];
+    let dibawahEditors = [];
+    // Fungsi untuk mengubah angka menjadi kata-kata
+    function numberToWords(num) {
+      const ones = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+      const teens = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas', 'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
+      const tens = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh', 'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
+      if (num === 100) return 'seratus';
+      if (num === 0) return 'nol';
+      if (num < 10) return ones[num];
+      if (num < 20) return teens[num - 10];
+      if (num < 100) {
+        const ten = Math.floor(num / 10);
+        const one = num % 10;
+        return tens[ten] + (one ? ' ' + ones[one] : '');
+      }
+      if (num < 1000) {
+        const hundred = Math.floor(num / 100);
+        const remainder = num % 100;
+        let result = hundred === 1 ? 'seratus' : ones[hundred] + ' ratus';
+        if (remainder > 0) result += ' ' + numberToWords(remainder);
+        return result;
+      }
+      if (num < 1000000) {
+        const thousand = Math.floor(num / 1000);
+        const remainder = num % 1000;
+        let result = numberToWords(thousand) + ' ribu';
+        if (remainder > 0) result += ' ' + numberToWords(remainder);
+        return result;
+      }
+      return num.toString();
+    }
+    // Fungsi untuk memformat tanggal
+    function formatDate() {
+      const dateInput = document.getElementById('dateInput');
+      const formattedDateInput = document.getElementById('formattedDate');
+      if (dateInput.value) {
+        const date = new Date(dateInput.value);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = date.toLocaleDateString('id-ID', options);
+        formattedDateInput.value = formattedDate;
+        updatePreview();
+      }
+    }
+    // Set tanggal default ke hari ini
+    window.addEventListener('load', function() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+      formatDate();
+      updatePreview();
+      // Inisialisasi editor pertama untuk DIATAS dan DIBAWAH
+      initEditor('diatas-editor-0', 'diatas');
+      initEditor('dibawah-editor-0', 'dibawah');
+    });
+    // Fungsi untuk menginisialisasi Editor.js
+    function initEditor(holderId, section) {
+      const editor = new EditorJS({
+        holder: holderId,
+        tools: {
+          paragraph: {
+            class: Paragraph,
+            inlineToolbar: true,
+             config: {
+                placeholder: 'Masukkan nama barang...'
+            }
+          }
+        },
+        data: { blocks: [] },
+        minHeight: 30, // Tinggi minimal editor
+        onChange: () => {
+          // Update preview saat konten editor berubah
+          updatePreview();
+        }
+      });
+      if (section === 'diatas') {
+        diatasEditors.push(editor);
+      } else if (section === 'dibawah') {
+        dibawahEditors.push(editor);
+      }
+    }
+    // Fungsi untuk menambah item DIATAS
+    function addDiatasItem() {
+      const container = document.getElementById('diatasItems');
+      const itemCount = container.children.length;
+      const newItem = document.createElement('div');
+      newItem.className = 'diatas-item border border-gray-200 rounded p-2 md:p-3 bg-gray-50';
+      newItem.innerHTML = `
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-xs font-medium text-gray-700">Nama Barang</label>
+          <div class="flex space-x-1">
+            <button type="button" class="font-size-btn active" data-size="text-base" onclick="setFont(this, 'diatas')">XS</button>
+            <button type="button" class="font-size-btn" data-size="text-lg" onclick="setFont(this, 'diatas')">S</button>
+            <button type="button" class="font-size-btn" data-size="text-xl" onclick="setFont(this, 'diatas')">M</button>
+            <button type="button" class="font-size-btn" data-size="text-2xl" onclick="setFont(this, 'diatas')">L</button>
+          </div>
+        </div>
+        <div class="editor-container diatas-editor-container" id="diatas-editor-${itemCount}" data-font-size="text-base"></div>
+        <div class="grid grid-cols-12 gap-2 items-end mt-2">
+          <div class="col-span-8 md:col-span-9">
+            <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+            <input type="number" name="diatas_quantity[]"
+                   class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 diatas-qty"
+                   placeholder="160" min="1" oninput="updatePreview()">
+          </div>
+          <div class="col-span-4 md:col-span-3 flex justify-end items-end pb-1.5">
+            <button type="button" onclick="removeDiatasItem(this)"
+                    class="bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded transition duration-300 text-xs">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(newItem);
+      // Inisialisasi editor untuk item baru
+      setTimeout(() => {
+        initEditor(`diatas-editor-${itemCount}`, 'diatas');
+      }, 0);
+      updatePreview();
+    }
+    // Fungsi untuk menghapus item DIATAS
+    function removeDiatasItem(button) {
+      const item = button.closest('.diatas-item');
+      if (document.querySelectorAll('.diatas-item').length > 1) {
+        // Hapus editor instance
+        const index = Array.from(document.getElementById('diatasItems').children).indexOf(item);
+        if (index > -1 && diatasEditors[index]) {
+            diatasEditors[index].destroy();
+            diatasEditors.splice(index, 1);
+        }
+        item.remove();
+        updatePreview();
+      } else {
+        alert('Minimal harus ada satu item!');
+      }
+    }
+    // Fungsi untuk menambah item DIBAWAH
+    function addDibawahItem() {
+      const container = document.getElementById('dibawahItems');
+      const itemCount = container.children.length;
+      const newItem = document.createElement('div');
+      newItem.className = 'dibawah-item border border-gray-200 rounded p-2 md:p-3 bg-gray-50';
+      newItem.innerHTML = `
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-xs font-medium text-gray-700">Nama Barang</label>
+          <div class="flex space-x-1">
+            <button type="button" class="font-size-btn active" data-size="text-base" onclick="setFont(this, 'dibawah')">XS</button>
+            <button type="button" class="font-size-btn" data-size="text-lg" onclick="setFont(this, 'dibawah')">S</button>
+            <button type="button" class="font-size-btn" data-size="text-xl" onclick="setFont(this, 'dibawah')">M</button>
+            <button type="button" class="font-size-btn" data-size="text-2xl" onclick="setFont(this, 'dibawah')">L</button>
+          </div>
+        </div>
+        <div class="editor-container dibawah-editor-container" id="dibawah-editor-${itemCount}" data-font-size="text-base"></div>
+        <div class="grid grid-cols-12 gap-2 items-end mt-2">
+          <div class="col-span-8 md:col-span-9">
+            <label class="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+            <input type="number" name="dibawah_quantity[]"
+                   class="w-full px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dibawah-qty"
+                   placeholder="160" min="1" oninput="updatePreview()">
+          </div>
+          <div class="col-span-4 md:col-span-3 flex justify-end items-end pb-1.5">
+            <button type="button" onclick="removeDibawahItem(this)"
+                    class="bg-red-500 hover:bg-red-600 text-white px-2 py-1.5 rounded transition duration-300 text-xs">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(newItem);
+      // Inisialisasi editor untuk item baru
+      setTimeout(() => {
+        initEditor(`dibawah-editor-${itemCount}`, 'dibawah');
+      }, 0);
+      updatePreview();
+    }
+    // Fungsi untuk menghapus item DIBAWAH
+    function removeDibawahItem(button) {
+      const item = button.closest('.dibawah-item');
+      if (document.querySelectorAll('.dibawah-item').length > 1) {
+        // Hapus editor instance
+        const index = Array.from(document.getElementById('dibawahItems').children).indexOf(item);
+        if (index > -1 && dibawahEditors[index]) {
+            dibawahEditors[index].destroy();
+            dibawahEditors.splice(index, 1);
+        }
+        item.remove();
+        updatePreview();
+      } else {
+        alert('Minimal harus ada satu item!');
+      }
+    }
+    // Fungsi untuk mengatur ukuran font
+    function setFont(button, section) {
+        const item = button.closest(`.${section}-item`);
+        const editorContainer = item.querySelector(`.${section}-editor-container`);
+        const fontSize = button.getAttribute('data-size');
+        // Update active button state
+        const buttons = item.querySelectorAll('.font-size-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        // Simpan ukuran font ke atribut data (bisa digunakan saat preview)
+        editorContainer.setAttribute('data-font-size', fontSize);
+        updatePreview();
+    }
+    // Fungsi untuk mendapatkan konten teks dari Editor.js (sederhana)
+    async function getEditorContent(editorInstance) {
+        try {
+            const savedData = await editorInstance.save();
+            if (savedData && savedData.blocks && savedData.blocks.length > 0) {
+                // Gabungkan semua teks dari blok paragraph
+                return savedData.blocks.map(block => block.data.text).join('');
+            }
+            return '';
+        } catch (error) {
+            console.error("Error getting editor content:", error);
+            return '';
+        }
+    }
+    // Fungsi untuk memperbarui pratinjau secara langsung
+    async function updatePreview() {
+      try {
+        // Ambil data form
+        const formattedDate = document.getElementById('formattedDate').value || 'Selasa, 22 Juli 2025';
+        const to = document.getElementById('to').value || 'Mas Fattah';
+        const km = document.getElementById('km').value || 'KM 22';
+        const signature = document.getElementById('signature').value || '';
+        // Ambil header
+        const diatasHeader = document.getElementById('diatasHeader').value || '';
+        const dibawahHeader = document.getElementById('dibawahHeader').value || '';
+        // Proses data items DIATAS
+        const diatasItemsContainer = document.getElementById('diatasItems');
+        const diatasItems = diatasItemsContainer.querySelectorAll('.diatas-item');
+        let diatasContent = '';
+        let diatasItemCount = 0;
+        for (let i = 0; i < diatasItems.length; i++) {
+            const item = diatasItems[i];
+            const editorContainer = item.querySelector('.diatas-editor-container');
+            const qtyInput = item.querySelector('.diatas-qty');
+            const fontSizeClass = editorContainer.getAttribute('data-font-size') || 'text-base';
+            let namaBarangText = '';
+            // Cek apakah editor sudah diinisialisasi
+            if (diatasEditors[i]) {
+                namaBarangText = await getEditorContent(diatasEditors[i]);
+            }
+            const quantity = qtyInput ? qtyInput.value : '';
+            if (namaBarangText && quantity) {
+                const qtyText = numberToWords(parseInt(quantity));
+                // Terapkan fontSizeClass ke seluruh baris (tr)
+                // --- Perubahan di sini: Hapus width dari style inline <td> ---
+                diatasContent += `
+                    <tr class="preview-item-row ${fontSizeClass}">
+                        <td style="padding: 2px 4px;"><span style="font-size:1.1em;">${quantity}</span> <span style="margin-left:4px;">(${qtyText})</span></td>
+                        <td style="padding: 2px 4px;">${namaBarangText}</td>
+                    </tr>
+                `;
+                diatasItemCount++;
+            }
+        }
+        // Proses data items DIBAWAH
+        const dibawahItemsContainer = document.getElementById('dibawahItems');
+        const dibawahItems = dibawahItemsContainer.querySelectorAll('.dibawah-item');
+        let dibawahContent = '';
+        let dibawahItemCount = 0;
+        for (let i = 0; i < dibawahItems.length; i++) {
+            const item = dibawahItems[i];
+            const editorContainer = item.querySelector('.dibawah-editor-container');
+            const qtyInput = item.querySelector('.dibawah-qty');
+            const fontSizeClass = editorContainer.getAttribute('data-font-size') || 'text-base';
+            let namaBarangText = '';
+            // Cek apakah editor sudah diinisialisasi
+            if (dibawahEditors[i]) {
+                namaBarangText = await getEditorContent(dibawahEditors[i]);
+            }
+            const quantity = qtyInput ? qtyInput.value : '';
+            if (namaBarangText && quantity) {
+                const qtyText = numberToWords(parseInt(quantity));
+                // Terapkan fontSizeClass ke seluruh baris (tr)
+                // --- Perubahan di sini: Hapus width dari style inline <td> ---
+                 dibawahContent += `
+                    <tr class="preview-item-row ${fontSizeClass}">
+                        <td style="padding: 2px 4px;"><span style="font-size:1.1em;">${quantity}</span> <span style="margin-left:4px;">(${qtyText})</span></td>
+                        <td style="padding: 2px 4px;">${namaBarangText}</td>
+                    </tr>
+                `;
+                dibawahItemCount++;
+            }
+        }
+        // Hitung total item
+        const totalItems = diatasItemCount + dibawahItemCount;
+        const itemText = totalItems === 1 ? 'satu item' : `${numberToWords(totalItems)} item`;
+        // Format tanggal untuk tanda tangan
+        const tanggalParts = formattedDate.split(', ');
+        const tanggalTandaTangan = tanggalParts.length > 1 ? tanggalParts[1] : '';
+        // Company details
+        const companyDetails = `
+          <div style="text-align: right; font-size: 16px; line-height: 1.2; margin-top: 100px;">
+            <div style="margin-top: 5px; font-weight: bold; margin-right:35px;">BELLA</div>
+          </div>
+        `;
+        // Generate memo content
+        const memoContent = `
+          <div style="font-family: Arial, sans-serif; width: 100%; margin: 0; padding: 5mm; box-sizing: border-box; font-size: 12px;"> <!-- Kurangi padding -->
+            <h1 style="color: #dc2626; text-align: center; font-size: 1.2em; font-weight: bold; margin: 3mm 0 5mm 0; padding: 3mm; background-color: lightblue;">
+              MEMO PENGAMBILAN BARANG
+            </h1>
+            <div style="margin-bottom: 5mm;"> <!-- Kurangi margin -->
+              <div style="font-weight: bold; font-size: 1.1em;">${formattedDate}</div>
+              <div style="margin-top: 5mm; font-weight: bold; font-size: 1.1em;">To. ${to}</div>
+              <div style="margin-top: 2mm; font-style: italic; font-size: 1.1em;">Gudang ${km}</div>
+            </div>
+            <!-- DIATAS Section -->
+            ${diatasItemCount > 0 ? `
+            <div style="margin-top: 10mm;"> <!-- Kurangi margin -->
+              ${diatasHeader ? `<h2 style="color: #dc2626; font-size: 1.05em; font-weight: bold; margin-bottom: 3mm;"> <!-- Kurangi font-size dan margin -->
+                ${diatasHeader}
+              </h2>` : ''}
+              <table style="width: 100%; border-collapse: collapse; margin: 3px 0;"> <!-- Kurangi margin, HAPUS table-layout:fixed -->
+                ${diatasContent}
+              </table>
+            </div>` : ''}
+            <!-- DIBAWAH Section -->
+            ${dibawahItemCount > 0 ? `
+            <div style="margin-top: 10mm;"> <!-- Kurangi margin -->
+              ${dibawahHeader ? `<h2 style="color: #dc2626; font-size: 1.05em; font-weight: bold; margin-bottom: 3mm;"> <!-- Kurangi font-size dan margin -->
+                ${dibawahHeader}
+              </h2>` : ''}
+              <table style="width: 100%; border-collapse: collapse; margin: 3px 0;"> <!-- Kurangi margin, HAPUS table-layout:fixed -->
+                ${dibawahContent}
+              </table>
+            </div>` : ''}
+            <div style="margin-top: 10mm; line-height: 1.3;"> <!-- Kurangi margin dan line-height -->
+              <div style="font-size: 1.1em; font-weight: bold; font-style:italic;">${itemText} !!!</div>
+              <div style="margin-top: 1mm; font-style: italic; font-weight: bold; font-size: 1.1em;">Untuk ${signature}</div>
+              <div style="text-align: right; margin-top: 10mm; font-style: italic; font-weight: bold; font-size: 1.1em;">BJM, ${tanggalTandaTangan}</div>
+            </div>
+            ${companyDetails}
+          </div>
+        `;
+        // Update preview element
+        document.getElementById('memoPreview').innerHTML = memoContent;
+      } catch (error) {
+        console.error("Error updating preview:", error);
+      }
+    }
+    // Fungsi untuk print memo langsung - DIPERBARUI UNTUK A5
+    // function printMemoDirect() {
+    function printMemoDirect(size = 'A5', orientation = 'portrait') { // Fungsi diperbarui dengan parameter
+      // updatePreview() sudah dipanggil secara otomatis oleh event listeners
+      const memoContentToPrint = document.getElementById('memoPreview').innerHTML;
+      const now = new Date();
+      const printTime = now.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      // Tentukan ukuran kertas dan orientasi untuk CSS
+      let pageSizeStyle = '';
+      if (size === 'A5') {
+        if (orientation === 'landscape') {
+            pageSizeStyle = `
+                @page {
+                  size: A5 landscape;
+                  margin: 0;
+                  padding: 0;
+                  marks: none;
+                  -webkit-print-color-adjust: exact;
+                }
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 148mm; /* Tinggi A5 */
+                  height: 210mm; /* Lebar A5 */
+                  font-size: 12px !important; /* Sesuaikan font size untuk A5 Lanskap */
+                }
+            `;
+        } else { // portrait
+            pageSizeStyle = `
+                @page {
+                  size: A5;
+                  margin: 0;
+                  padding: 0;
+                  marks: none;
+                  -webkit-print-color-adjust: exact;
+                }
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 148mm; /* Lebar A5 */
+                  height: 210mm; /* Tinggi A5 */
+                  font-size: 12px !important; /* Sesuaikan font size untuk A5 Potret */
+                }
+            `;
+        }
+      } else {
+        // Default ke A4 jika parameter tidak valid
+         pageSizeStyle = `
+                @page {
+                  size: A4;
+                  margin: 0;
+                  padding: 0;
+                  marks: none;
+                  -webkit-print-color-adjust: exact;
+                }
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 210mm;
+                  height: 297mm;
+                  font-size: 16px !important;
+                }
+            `;
+      }
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Memo Pengambilan Barang</title>
+          <style>
+            ${pageSizeStyle} /* Gunakan style ukuran kertas yang ditentukan */
+            .print-time {
+              position: fixed;
+              top: 3mm; /* Kurangi posisi */
+              left: 5mm; /* Kurangi posisi */
+              font-size: 7pt; /* Kurangi ukuran font */
+              color: black;
+            }
+            .memo-content {
+              width: 100%;
+              height: 100%;
+              padding: 5mm; /* Kurangi padding */
+              box-sizing: border-box;
+            }
+            .preview-item-row {
+               /* Gaya default untuk seluruh baris item saat print */
+               font-size: 0.8rem; /* Default font size */
+            }
+            .preview-item-row.text-base { font-size: 0.8rem; }
+            .preview-item-row.text-lg { font-size: 0.9rem; }
+            .preview-item-row.text-xl { font-size: 1rem; }
+            .preview-item-row.text-2xl { font-size: 1.1rem; }
+
+            /* --- CSS untuk layout tabel DI PRINT - DIUBAH --- */
+            .memo-content table {
+                /* table-layout: fixed; DIHAPUS */
+                width: 100%;
+            }
+            .memo-content table td {
+                padding: 2px 4px;
+                vertical-align: top;
+                /* overflow: hidden; Hapus jika tidak ingin menyembunyikan teks */
+                /* text-overflow: ellipsis; Hapus jika tidak ingin elipsis */
+                white-space: nowrap;
+                word-wrap: normal;
+                /* width: ... Hapus properti width inline dari HTML */
+            }
+            /* -------------------------------------------------------------------------- */
+
+            @media print {
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="memo-content">
+            ${memoContentToPrint}
+            <div class="print-time">Dicetak: ${printTime}</div>
+          </div>
+          <script>
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 300);
+            }, 200);
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+    // Tambahkan event listener untuk input fields yang mempengaruhi preview
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputsToUpdate = document.querySelectorAll('#to, #km, #signature, #diatasHeader, #dibawahHeader, .diatas-qty, .dibawah-qty');
+      inputsToUpdate.forEach(input => {
+        input.addEventListener('input', updatePreview);
+      });
+    });
+  </script>
+</body>
+</html>
